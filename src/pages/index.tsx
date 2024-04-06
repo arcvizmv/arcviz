@@ -1,11 +1,10 @@
 import * as React from "react"
-import {PropsWithoutRef, useRef, useState} from "react"
+import {useRef, useState} from "react"
 import type { HeadFC, PageProps } from "gatsby"
-import {Canvas, useFrame} from "@react-three/fiber"
-import {motion} from "framer-motion-3d"
-import { stat } from "fs"
-import { extend } from '@react-three/fiber'
+import {extend, Canvas, useFrame} from "@react-three/fiber"
+import {motion, MotionCanvas} from "framer-motion-3d"
 
+extend({motion, MotionCanvas})
 
 const pageStyles = {
   color: "#232129",
@@ -143,37 +142,49 @@ const links = [
 ]
 
 const IndexPage: React.FC<PageProps> = () => {
-
-
-  const meshRef = useRef() 
+  // Set up state for the hovered and active state
   const [isHovered, setIsHovered] = useState(false)
-
-  function Box() {
-  return (
-      <motion.div
-        whileHover={{scale: 1.2}}
-        onHoverStart={() => setIsHovered(true)}
-        onHoverEnd={() => setIsHovered(false)}>
-          <boxGeometry args={[1,1,1]} />
-          <motion.meshStandardMaterial color={isHovered ? 'hotpink' : 'orange'} />
-      </motion.div>
-   )
+  const [active, setActive] = useState(false)
+  
+  function Box(props) {
+    const meshRef = useRef()
+    // Subscribe this component to the render-loop, rotate the mesh every frame
+    useFrame((state, delta) => (meshRef.current.rotation.x += delta))
+    return (
+      <>
+      <group position={[0, -0.9, -3]}>
+      <mesh
+            receiveShadow
+            castShadow
+            rotation-x={-Math.PI/2}
+            position-z={1}
+            scale={[3,0.2,3]}
+            {...props}
+            ref={meshRef}
+            // scale={active ? 1.5 : 1}
+            onClick={(event) => setActive(!active)}>
+            <boxGeometry args={[3,3,3]} />
+            <meshStandardMaterial color={isHovered ? 'hotpink' : 'orange'} />
+          </mesh>
+        </group>
+      </>
+    )
   }
 
   return (
     <main style={pageStyles}>
     <h1 style={headingStyles}>
      Arcviz anywhere
-    <p style={paragraphStyles}>We mastered Vizrach, with a difference.</p>
+    <p style={paragraphStyles}>We mastered architectural visuals with a difference.</p>
     </h1>
     <Canvas>
-      <motion.group animate={isHovered ? "hover" : "rest"}>
-       <motion.pointLight animate={{ x:2}} />
-       <ambientLight intensity={Math.PI / 2} />
-       <spotLight position={[10,10,10]} angle={0.15} penumbra={1} decay={0} intensity={Math.PI} />
-       <motion.mesh variants={{ hover: {z: 1}}} />
-       <Box/>
-      </motion.group>
+      <motion.group animate={isHovered? "hover" : "rest"}>
+          <motion.pointLight animate={{ x:2}} />
+          <ambientLight intensity={Math.PI / 2} />
+          <spotLight position={[10,10,10]} angle={0.15} penumbra={1} decay={0} intensity={Math.PI} />
+          <motion.mesh variants={{ hover: {z: 0.5}}} />
+          <Box/>
+       </motion.group>
     </Canvas>
     </main>
   )
